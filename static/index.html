@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApplyTrack — Internship Application Tracker</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>🚀 ApplyTrack</h1>
+      <p class="subtitle">Internship Application Tracker</p>
+    </div>
+    <div class="top-actions">
+      <button id="exportBtn" class="btn btn-secondary">⬇ Export CSV</button>
+      <label class="btn btn-secondary file-label">
+        ⬆ Import CSV
+        <input type="file" id="importInput" accept=".csv" hidden>
+      </label>
+      <button id="clearBtn" class="btn btn-danger-outline">Clear all data</button>
+      <button id="addBtn" class="btn btn-primary">+ Add Application</button>
+    </div>
+  </header>
+
+  <p id="sampleBanner" class="banner" hidden>
+    Showing <strong>sample data</strong> — 12 example applications so you can see
+    the dashboard in action. Add your own, or use “Clear all data” to start fresh.
+  </p>
+
+  <section id="stats" class="stats">
+    <div class="stat-card"><span class="stat-num" id="statTotal">–</span><span class="stat-label">Total applications</span></div>
+    <div class="stat-card"><span class="stat-num" id="statResponse">–</span><span class="stat-label">Response rate</span></div>
+    <div class="stat-card"><span class="stat-num" id="statInterviews">–</span><span class="stat-label">Interviews</span></div>
+    <div class="stat-card"><span class="stat-num" id="statOffers">–</span><span class="stat-label">Offers</span></div>
+    <div class="stat-card"><span class="stat-num" id="statUpcoming">–</span><span class="stat-label">Deadlines ≤ 7 days</span></div>
+  </section>
+
+  <section class="pipeline" id="pipeline"></section>
+
+  <section class="upcoming">
+    <h2>⏰ Upcoming deadlines</h2>
+    <ul id="upcomingList"><li class="muted">Loading…</li></ul>
+  </section>
+
+  <section class="filters">
+    <input type="search" id="searchInput" placeholder="🔍 Search company or role…" aria-label="Search company or role">
+    <select id="statusFilter" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option>Applied</option>
+      <option>OA/Assessment</option>
+      <option>Interview</option>
+      <option>Offer</option>
+      <option>Rejected</option>
+    </select>
+    <select id="termFilter" aria-label="Filter by term">
+      <option value="">All terms</option>
+      <option>Spring 2027</option>
+      <option>Summer 2027</option>
+      <option>Fall 2027</option>
+    </select>
+    <select id="sortSelect" aria-label="Sort applications">
+      <option value="deadline">Sort: deadline</option>
+      <option value="date_applied">Sort: recently applied</option>
+      <option value="company">Sort: company A–Z</option>
+    </select>
+  </section>
+
+  <main>
+    <table id="appsTable">
+      <thead>
+        <tr>
+          <th>Company</th><th>Role</th><th>Location</th><th>Term</th>
+          <th>Applied</th><th>Deadline</th><th>Pay</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="appsBody">
+        <tr><td colspan="9" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+    <p id="emptyState" class="muted" hidden>No applications match these filters. Try clearing the search, or add your first application.</p>
+  </main>
+
+  <!-- Add / Edit modal -->
+  <div id="appModal" class="modal" hidden>
+    <div class="modal-content">
+      <h2 id="modalTitle">Add Application</h2>
+      <form id="appForm">
+        <input type="hidden" id="fieldId">
+        <label>Company * <input id="fieldCompany" required maxlength="120" placeholder="e.g. Texas Instruments"></label>
+        <label>Role * <input id="fieldRole" required maxlength="200" placeholder="e.g. Software Engineering Intern"></label>
+        <div class="form-row">
+          <label>Location <input id="fieldLocation" maxlength="120" placeholder="City, ST"></label>
+          <label>Term <input id="fieldTerm" maxlength="60" placeholder="Summer 2027"></label>
+        </div>
+        <div class="form-row">
+          <label>Req / Job ID <input id="fieldReqId" maxlength="60" placeholder="e.g. 25019103"></label>
+          <label>Pay <input id="fieldPay" maxlength="60" placeholder="e.g. $30/hr"></label>
+        </div>
+        <div class="form-row">
+          <label>Date applied <input type="date" id="fieldDateApplied"></label>
+          <label>Deadline <input type="date" id="fieldDeadline"></label>
+        </div>
+        <label>Status
+          <select id="fieldStatus">
+            <option>Applied</option>
+            <option>OA/Assessment</option>
+            <option>Interview</option>
+            <option>Offer</option>
+            <option>Rejected</option>
+          </select>
+        </label>
+        <label>Posting link <input id="fieldLink" type="url" placeholder="https://…"></label>
+        <label>Notes <textarea id="fieldNotes" rows="3" placeholder="Recruiter name, OA details, next steps…"></textarea></label>
+        <p id="formError" class="error" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Outreach modal -->
+  <div id="outreachModal" class="modal" hidden>
+    <div class="modal-content">
+      <h2 id="outreachTitle">Outreach</h2>
+      <ul id="outreachList" class="outreach-list"></ul>
+      <form id="outreachForm">
+        <input type="hidden" id="outreachAppId">
+        <div class="form-row">
+          <label>Contact * <input id="outreachName" required maxlength="120" placeholder="Alum / recruiter name"></label>
+          <label>Date <input type="date" id="outreachDate"></label>
+        </div>
+        <div class="form-row">
+          <label>Channel
+            <select id="outreachChannel">
+              <option>Email</option><option>LinkedIn</option><option>Phone</option><option>Other</option>
+            </select>
+          </label>
+          <label>Notes <input id="outreachNotes" placeholder="What you asked / heard back"></label>
+        </div>
+        <p id="outreachError" class="error" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="outreachCloseBtn">Close</button>
+          <button type="submit" class="btn btn-primary">Log outreach</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="muted">
+    ApplyTrack — FastAPI + SQLite + vanilla JS. Data stays on your machine in <code>data/applytrack.db</code>.
+    API docs at <a href="/docs">/docs</a>.
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
